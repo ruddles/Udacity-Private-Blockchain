@@ -67,12 +67,21 @@ class Blockchain {
         if (self.height >= 0) {
           block.previousBlockHash = self.chain[self.height].hash;
         }
-        block.height = this.height + 1;
+        block.height = self.height + 1;
         block.time = new Date().getTime().toString().slice(0, -3);
         block.hash = SHA256(JSON.stringify(block)).toString();
 
         self.chain.push(block);
         self.height++;
+
+        const validationErrors = await self.validateChain();
+
+        if (validationErrors.length > 0) {
+          reject(
+            Error("Block does not validate: " + validationErrors.join(", "))
+          );
+          return;
+        }
 
         resolve(block);
       } catch (error) {
@@ -207,8 +216,8 @@ class Blockchain {
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
       for (let i = 1; i < self.height; i++) {
-        const current = chain[i];
-        const prev = chain[i - 1];
+        const current = self.chain[i];
+        const prev = self.chain[i - 1];
 
         if (!current.validate()) {
           errorLog.push(`${current.hash}: Block is invalid`);
